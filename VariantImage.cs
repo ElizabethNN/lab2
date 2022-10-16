@@ -56,11 +56,14 @@ namespace lab_graphic_2 {
 			int width_bytes = (int)(header.width * header.bitCount);
 			if (width_bytes % 16 != 0)
 				width_bytes += 16 - width_bytes % 16;
-			header.size = (uint)(20 + (header.palleteSize * 4) + width_bytes * header.height);
+			
+			int headerBytes = 20;
+			
+			header.size = (uint)(headerBytes + (header.palleteSize * 4) + width_bytes * header.height);
 
 			data = new ushort[width_bytes / 16, header.height];
-			for (int i = 0; i < colors.GetLength(1); i++) {
-				for(int j = 0; j < colors.GetLength(0); j += 16 / header.bitCount)
+			for (int i = 0; i < header.height; i++) {
+				for(int j = 0; j < header.width; j += 16 / header.bitCount)
 				{
 					if (header.bitCount == 16)
 					{
@@ -70,20 +73,20 @@ namespace lab_graphic_2 {
 					{
 						ushort t = (ushort)Array.IndexOf(pallete, colors[j, i]);
 						t <<= 8;
-						if(j + 1 < colors.GetLength(0)) 
+						if(j + 1 < header.width) 
 							t += (ushort)Array.IndexOf(pallete, colors[j + 1, i]);
 						data[j / 2, i] = t;
 					}
 					else {
 						ushort t = (ushort)Array.IndexOf(pallete, colors[j, i]);
 						t <<= 4;
-						if (j + 1 < colors.GetLength(0))
+						if (j + 1 < header.width)
 							t += (ushort)Array.IndexOf(pallete, colors[j + 1, i]);
 						t <<= 4;
-						if (j + 2 < colors.GetLength(0))
+						if (j + 2 < header.width)
 							t += (ushort)Array.IndexOf(pallete, colors[j + 2, i]);
 						t <<= 4;
-						if (j + 3 < colors.GetLength(0))
+						if (j + 3 < header.width)
 							t += (ushort)Array.IndexOf(pallete, colors[j + 3, i]);
 						data[j / 4, i] = t;
 					}
@@ -101,21 +104,25 @@ namespace lab_graphic_2 {
 			header.bitCount = (ushort)BitConverter.ToInt16(bytes, 14);
 			header.palleteSize = (ushort)BitConverter.ToInt16(bytes, 16);
 			SFML.Graphics.Color[] pallete = new Color[header.palleteSize];
+			
+			int headerBytes = 20;
+
 			for (int i = 0; i < pallete.Length; i++) {
-				byte b = bytes[18 + i * 4];
-				byte g = bytes[19 + i * 4];
-				byte r = bytes[20 + i * 4];
-				byte a = bytes[21 + i * 4];
+				byte b = bytes[headerBytes + i * 4];
+				byte g = bytes[headerBytes + 1 + i * 4];
+				byte r = bytes[headerBytes + 2 + i * 4];
+				byte a = bytes[headerBytes + 3 + i * 4];
 				pallete[i] = new Color(r, g, b, a);	
 			}
 			int width_bytes = (int)(header.width * header.bitCount);
 			if (width_bytes % 16 != 0)
 				width_bytes += 16 - width_bytes % 16;
 			ushort[,] data = new ushort[width_bytes / 16, header.height];
+						
 			for (int i = 0; i < header.height; i++) {
 				for (int j = 0; j < width_bytes / 16; j++)
 				{
-					data[j, i] = (ushort)BitConverter.ToInt16(bytes, 22 + pallete.Length * 4 + (i * width_bytes / 16) + j);
+					data[j, i] = (ushort)BitConverter.ToInt16(bytes, headerBytes + pallete.Length * 4 + (i * width_bytes / 16) + j);
 				}
 			}
 			return new VariantImage(header, pallete, data);
